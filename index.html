@@ -20,18 +20,42 @@
             font-size: 18px;
             cursor: pointer;
         }
+        #winner {
+            margin-top: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff0000;
+        }
+        .firework {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: gold;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: explode 1s ease-out;
+        }
+        @keyframes explode {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(5); opacity: 0; }
+        }
     </style>
 </head>
 <body>
     <h1>Giveaway Wheel</h1>
+    <label for="participants">Enter names (comma-separated):</label>
+    <input type="text" id="participants" placeholder="Name1, Name2, Name3...">
+    <button onclick="updateParticipants()">Update</button>
+    <br>
     <canvas id="wheelCanvas" width="300" height="300"></canvas>
     <br>
     <button onclick="spinWheel()">Spin</button>
+    <div id="winner"></div>
     
     <script>
         const canvas = document.getElementById("wheelCanvas");
         const ctx = canvas.getContext("2d");
-        const segments = ["Prize 1", "Prize 2", "Prize 3", "Prize 4", "Prize 5", "Prize 6"];
+        let segments = ["Prize 1", "Prize 2", "Prize 3", "Prize 4", "Prize 5", "Prize 6"];
         const colors = ["#ff0000", "#ff9900", "#ffff00", "#33cc33", "#3399ff", "#9900cc"];
         let angle = 0;
         let spinning = false;
@@ -42,7 +66,7 @@
                 ctx.beginPath();
                 ctx.moveTo(150, 150);
                 ctx.arc(150, 150, 150, i * sliceAngle, (i + 1) * sliceAngle);
-                ctx.fillStyle = colors[i];
+                ctx.fillStyle = colors[i % colors.length];
                 ctx.fill();
                 ctx.stroke();
                 ctx.fillStyle = "#fff";
@@ -69,6 +93,7 @@
                     if (spinSpeed < 0.5) {
                         clearInterval(interval);
                         spinning = false;
+                        announceWinner();
                     }
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     ctx.save();
@@ -80,9 +105,34 @@
                 }, 30);
             }
         }
-        
+
+        function announceWinner() {
+            let winningIndex = Math.floor(((360 - (angle % 360)) / 360) * segments.length) % segments.length;
+            let winnerName = segments[winningIndex];
+            document.getElementById("winner").innerText = `Winner: ${winnerName}! 🎉`;
+            launchFireworks();
+        }
+
+        function launchFireworks() {
+            for (let i = 0; i < 10; i++) {
+                let firework = document.createElement("div");
+                firework.className = "firework";
+                document.body.appendChild(firework);
+                firework.style.left = `${Math.random() * window.innerWidth}px`;
+                firework.style.top = `${Math.random() * window.innerHeight}px`;
+                setTimeout(() => firework.remove(), 1000);
+            }
+        }
+
+        function updateParticipants() {
+            let input = document.getElementById("participants").value.trim();
+            if (input.length > 0) {
+                segments = input.split(",").map(name => name.trim());
+                drawWheel();
+            }
+        }
+
         drawWheel();
     </script>
 </body>
 </html>
-
