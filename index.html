@@ -43,26 +43,29 @@
 </head>
 <body>
     <h1>Giveaway Wheel</h1>
-    <label for="participants">Enter names (comma-separated):</label>
-    <input type="text" id="participants" placeholder="Name1, Name2, Name3...">
-    <button onclick="updateParticipants()">Update</button>
+    <label for="participants">Enter your name to participate:</label>
+    <input type="text" id="participantName" placeholder="Your Name">
+    <button onclick="registerParticipant()">Join Giveaway</button>
+    <br><br>
+    <button id="startButton" onclick="startGiveaway()" disabled>Start Giveaway</button>
     <br>
     <canvas id="wheelCanvas" width="300" height="300"></canvas>
     <br>
-    <button onclick="spinWheel()">Spin</button>
+    <button id="spinButton" onclick="spinWheel()" disabled>Spin</button>
     <div id="winner"></div>
     
     <script>
         const canvas = document.getElementById("wheelCanvas");
         const ctx = canvas.getContext("2d");
-        let segments = ["Prize 1", "Prize 2", "Prize 3", "Prize 4", "Prize 5", "Prize 6"];
+        let participants = [];
         const colors = ["#ff0000", "#ff9900", "#ffff00", "#33cc33", "#3399ff", "#9900cc"];
         let angle = 0;
         let spinning = false;
         
         function drawWheel() {
-            const sliceAngle = (2 * Math.PI) / segments.length;
-            for (let i = 0; i < segments.length; i++) {
+            if (participants.length === 0) return;
+            const sliceAngle = (2 * Math.PI) / participants.length;
+            for (let i = 0; i < participants.length; i++) {
                 ctx.beginPath();
                 ctx.moveTo(150, 150);
                 ctx.arc(150, 150, 150, i * sliceAngle, (i + 1) * sliceAngle);
@@ -77,13 +80,13 @@
                 ctx.save();
                 ctx.translate(150 + Math.cos(textAngle) * 100, 150 + Math.sin(textAngle) * 100);
                 ctx.rotate(textAngle);
-                ctx.fillText(segments[i], 0, 0);
+                ctx.fillText(participants[i], 0, 0);
                 ctx.restore();
             }
         }
         
         function spinWheel() {
-            if (!spinning) {
+            if (!spinning && participants.length > 0) {
                 spinning = true;
                 let spinAngle = Math.random() * 360 + 1800; 
                 let spinSpeed = 50;
@@ -107,8 +110,8 @@
         }
 
         function announceWinner() {
-            let winningIndex = Math.floor(((360 - (angle % 360)) / 360) * segments.length) % segments.length;
-            let winnerName = segments[winningIndex];
+            let winningIndex = Math.floor(((360 - (angle % 360)) / 360) * participants.length) % participants.length;
+            let winnerName = participants[winningIndex];
             document.getElementById("winner").innerText = `Winner: ${winnerName}! 🎉`;
             launchFireworks();
         }
@@ -124,14 +127,22 @@
             }
         }
 
-        function updateParticipants() {
-            let input = document.getElementById("participants").value.trim();
-            if (input.length > 0) {
-                segments = input.split(",").map(name => name.trim());
+        function registerParticipant() {
+            let input = document.getElementById("participantName").value.trim();
+            if (input.length > 0 && !participants.includes(input)) {
+                participants.push(input);
+                document.getElementById("participantName").value = "";
                 drawWheel();
+                document.getElementById("startButton").disabled = false;
             }
         }
 
+        function startGiveaway() {
+            if (participants.length > 1) {
+                document.getElementById("spinButton").disabled = false;
+            }
+        }
+        
         drawWheel();
     </script>
 </body>
