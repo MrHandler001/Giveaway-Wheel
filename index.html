@@ -43,9 +43,10 @@
 </head>
 <body>
     <h1>Giveaway Wheel</h1>
-    <p>Invite participants with this link: <span id="inviteLink"></span></p>
-    <label for="participants">Enter your name to participate:</label>
-    <input type="text" id="participantName" placeholder="Your Name" disabled>
+    <button id="hostButton" onclick="becomeHost()">Start a Giveaway</button>
+    <p id="inviteSection" style="display:none;">Invite participants with this link: <span id="inviteLink"></span></p>
+    <label for="participants">Enter your email to participate:</label>
+    <input type="email" id="participantEmail" placeholder="Your Email" disabled>
     <button onclick="registerParticipant()" disabled>Join Giveaway</button>
     <br><br>
     <button id="startButton" onclick="startGiveaway()" disabled>Start Giveaway</button>
@@ -59,6 +60,7 @@
         const canvas = document.getElementById("wheelCanvas");
         const ctx = canvas.getContext("2d");
         let participants = [];
+        const emails = new Set();
         const colors = ["#ff0000", "#ff9900", "#ffff00", "#33cc33", "#3399ff", "#9900cc"];
         let angle = 0;
         let spinning = false;
@@ -130,10 +132,11 @@
         }
 
         function registerParticipant() {
-            let input = document.getElementById("participantName").value.trim();
-            if (input.length > 0 && !participants.includes(input)) {
-                participants.push(input);
-                document.getElementById("participantName").value = "";
+            let email = document.getElementById("participantEmail").value.trim();
+            if (email.length > 0 && !emails.has(email)) {
+                emails.add(email);
+                participants.push(email);
+                document.getElementById("participantEmail").value = "";
                 drawWheel();
             }
         }
@@ -144,20 +147,28 @@
             }
         }
 
-        function generateInviteLink() {
-            const url = new URL(window.location.href);
-            const params = new URLSearchParams(url.search);
-            if (params.has("host")) {
-                isHost = true;
-                document.getElementById("startButton").disabled = false;
-            } else {
-                document.getElementById("participantName").disabled = false;
-                document.querySelector("button[onclick='registerParticipant()']").disabled = false;
-            }
-            document.getElementById("inviteLink").innerText = `${window.location.origin}${window.location.pathname}?join=true`;
+        function becomeHost() {
+            isHost = true;
+            document.getElementById("hostButton").style.display = "none";
+            document.getElementById("startButton").disabled = false;
+            document.getElementById("inviteSection").style.display = "block";
+            generateInviteLink();
         }
 
-        generateInviteLink();
+        function generateInviteLink() {
+            const inviteLink = `${window.location.origin}${window.location.pathname}?join=true`;
+            document.getElementById("inviteLink").innerText = inviteLink;
+        }
+
+        function checkUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.has("join")) {
+                document.getElementById("participantEmail").disabled = false;
+                document.querySelector("button[onclick='registerParticipant()']").disabled = false;
+            }
+        }
+
+        checkUrlParams();
         drawWheel();
     </script>
 </body>
