@@ -43,6 +43,7 @@
 </head>
 <body>
     <h1>Giveaway Wheel</h1>
+    <p>Invite participants with this link: <span id="inviteLink"></span></p>
     <label for="participants">Enter your name to participate:</label>
     <input type="text" id="participantName" placeholder="Your Name">
     <button onclick="registerParticipant()">Join Giveaway</button>
@@ -61,6 +62,7 @@
         const colors = ["#ff0000", "#ff9900", "#ffff00", "#33cc33", "#3399ff", "#9900cc"];
         let angle = 0;
         let spinning = false;
+        let isHost = false;
         
         function drawWheel() {
             if (participants.length === 0) return;
@@ -133,16 +135,36 @@
                 participants.push(input);
                 document.getElementById("participantName").value = "";
                 drawWheel();
-                document.getElementById("startButton").disabled = false;
+                if (isHost) {
+                    document.getElementById("startButton").disabled = false;
+                }
             }
         }
 
         function startGiveaway() {
-            if (participants.length > 1) {
+            if (isHost && participants.length > 1) {
                 document.getElementById("spinButton").disabled = false;
             }
         }
-        
+
+        function generateInviteLink() {
+            const url = new URL(window.location.href);
+            const params = new URLSearchParams(url.search);
+            if (params.has("host")) {
+                isHost = true;
+                document.getElementById("startButton").disabled = false;
+            }
+            if (params.has("join")) {
+                const name = prompt("Enter your name to join the giveaway:");
+                if (name) {
+                    participants.push(name);
+                    drawWheel();
+                }
+            }
+            document.getElementById("inviteLink").innerText = `${window.location.origin}${window.location.pathname}?join=true`;
+        }
+
+        generateInviteLink();
         drawWheel();
     </script>
 </body>
