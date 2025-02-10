@@ -45,8 +45,8 @@
     <h1>Giveaway Wheel</h1>
     <p>Invite participants with this link: <span id="inviteLink"></span></p>
     <label for="participants">Enter your name to participate:</label>
-    <input type="text" id="participantName" placeholder="Your Name">
-    <button onclick="registerParticipant()">Join Giveaway</button>
+    <input type="text" id="participantName" placeholder="Your Name" disabled>
+    <button onclick="registerParticipant()" disabled>Join Giveaway</button>
     <br><br>
     <button id="startButton" onclick="startGiveaway()" disabled>Start Giveaway</button>
     <br>
@@ -135,9 +135,6 @@
                 participants.push(input);
                 document.getElementById("participantName").value = "";
                 drawWheel();
-                if (isHost) {
-                    document.getElementById("startButton").disabled = false;
-                }
             }
         }
 
@@ -153,13 +150,9 @@
             if (params.has("host")) {
                 isHost = true;
                 document.getElementById("startButton").disabled = false;
-            }
-            if (params.has("join")) {
-                const name = prompt("Enter your name to join the giveaway:");
-                if (name) {
-                    participants.push(name);
-                    drawWheel();
-                }
+            } else {
+                document.getElementById("participantName").disabled = false;
+                document.querySelector("button[onclick='registerParticipant()']").disabled = false;
             }
             document.getElementById("inviteLink").innerText = `${window.location.origin}${window.location.pathname}?join=true`;
         }
