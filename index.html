@@ -26,54 +26,53 @@
             font-weight: bold;
             color: #ff0000;
         }
-        .firework {
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            background-color: gold;
-            border-radius: 50%;
-            opacity: 0.8;
-            animation: explode 1s ease-out;
-        }
-        @keyframes explode {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(5); opacity: 0; }
+        #participantList, #winnerCount {
+            margin-top: 20px;
+            font-size: 18px;
         }
     </style>
 </head>
 <body>
     <h1>Giveaway Wheel</h1>
     <button id="hostButton" onclick="becomeHost()">Start a Giveaway</button>
-    <p id="inviteSection" style="display:none;">Invite participants with this link: <span id="inviteLink"></span></p>
+    <p id="inviteSection" style="display:none;">Invite participants with this link: <span id="inviteLink"></span> <button onclick="copyInviteLink()">Copy Link</button></p>
     <label for="participants">Enter your email to participate:</label>
     <input type="email" id="participantEmail" placeholder="Your Email" disabled>
-    <button onclick="registerParticipant()" disabled>Join Giveaway</button>
+    <button id="joinButton" onclick="registerParticipant()" disabled>Join Giveaway</button>
     <br><br>
+    <label for="winnerSelection">Select Number of Winners:</label>
+    <input type="number" id="winnerSelection" min="1" max="500" value="1" disabled>
     <button id="startButton" onclick="startGiveaway()" disabled>Start Giveaway</button>
     <br>
     <canvas id="wheelCanvas" width="300" height="300"></canvas>
     <br>
     <button id="spinButton" onclick="spinWheel()" disabled>Spin</button>
     <div id="winner"></div>
+    <p id="participantList">Participants: 0</p>
+    <p id="winnerCount">Winners: 0</p>
     
     <script>
         const canvas = document.getElementById("wheelCanvas");
         const ctx = canvas.getContext("2d");
         let participants = [];
         const emails = new Set();
-        const colors = ["#ff0000", "#ff9900", "#ffff00", "#33cc33", "#3399ff", "#9900cc"];
-        let angle = 0;
-        let spinning = false;
-        let isHost = false;
-        
+        let selectedWinners = 1;
+        let isHost = localStorage.getItem("isHost") === "true";
+        let giveawayId = localStorage.getItem("giveawayId") || generateUniqueId();
+
+        function generateUniqueId() {
+            return 'giveaway-' + Math.random().toString(36).substr(2, 9);
+        }
+
         function drawWheel() {
             if (participants.length === 0) return;
             const sliceAngle = (2 * Math.PI) / participants.length;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             for (let i = 0; i < participants.length; i++) {
                 ctx.beginPath();
                 ctx.moveTo(150, 150);
                 ctx.arc(150, 150, 150, i * sliceAngle, (i + 1) * sliceAngle);
-                ctx.fillStyle = colors[i % colors.length];
+                ctx.fillStyle = `hsl(${(i * 360) / participants.length}, 100%, 50%)`;
                 ctx.fill();
                 ctx.stroke();
                 ctx.fillStyle = "#fff";
@@ -88,46 +87,17 @@
                 ctx.restore();
             }
         }
-        
+
         function spinWheel() {
-            if (!spinning && participants.length > 0) {
-                spinning = true;
-                let spinAngle = Math.random() * 360 + 1800; 
-                let spinSpeed = 50;
-                let interval = setInterval(() => {
-                    angle += spinSpeed;
-                    spinSpeed *= 0.97; 
-                    if (spinSpeed < 0.5) {
-                        clearInterval(interval);
-                        spinning = false;
-                        announceWinner();
-                    }
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.save();
-                    ctx.translate(150, 150);
-                    ctx.rotate((angle * Math.PI) / 180);
-                    ctx.translate(-150, -150);
-                    drawWheel();
-                    ctx.restore();
-                }, 30);
-            }
-        }
-
-        function announceWinner() {
-            let winningIndex = Math.floor(((360 - (angle % 360)) / 360) * participants.length) % participants.length;
-            let winnerName = participants[winningIndex];
-            document.getElementById("winner").innerText = `Winner: ${winnerName}! 🎉`;
-            launchFireworks();
-        }
-
-        function launchFireworks() {
-            for (let i = 0; i < 10; i++) {
-                let firework = document.createElement("div");
-                firework.className = "firework";
-                document.body.appendChild(firework);
-                firework.style.left = `${Math.random() * window.innerWidth}px`;
-                firework.style.top = `${Math.random() * window.innerHeight}px`;
-                setTimeout(() => firework.remove(), 1000);
+            if (participants.length > 0) {
+                let winners = [];
+                while (winners.length < selectedWinners && participants.length > 0) {
+                    let winnerIndex = Math.floor(Math.random() * participants.length);
+                    winners.push(participants.splice(winnerIndex, 1)[0]);
+                }
+                document.getElementById("winner").innerText = "Winners: " + winners.join(", ");
+                document.getElementById("winnerCount").innerText = "Winners: " + winners.length;
+                drawWheel();
             }
         }
 
@@ -137,6 +107,7 @@
                 emails.add(email);
                 participants.push(email);
                 document.getElementById("participantEmail").value = "";
+                document.getElementById("participantList").innerText = "Participants: " + participants.length;
                 drawWheel();
             }
         }
@@ -144,31 +115,48 @@
         function startGiveaway() {
             if (isHost && participants.length > 1) {
                 document.getElementById("spinButton").disabled = false;
+                selectedWinners = parseInt(document.getElementById("winnerSelection").value);
             }
         }
 
         function becomeHost() {
             isHost = true;
+            localStorage.setItem("isHost", "true");
+            localStorage.setItem("giveawayId", giveawayId);
             document.getElementById("hostButton").style.display = "none";
             document.getElementById("startButton").disabled = false;
+            document.getElementById("winnerSelection").disabled = false;
             document.getElementById("inviteSection").style.display = "block";
             generateInviteLink();
         }
 
         function generateInviteLink() {
-            const inviteLink = `${window.location.origin}${window.location.pathname}?join=true`;
+            const inviteLink = `${window.location.origin}${window.location.pathname}?join=${giveawayId}`;
             document.getElementById("inviteLink").innerText = inviteLink;
+        }
+
+        function copyInviteLink() {
+            const link = document.getElementById("inviteLink").innerText;
+            navigator.clipboard.writeText(link).then(() => {
+                alert("Invite link copied!");
+            });
         }
 
         function checkUrlParams() {
             const params = new URLSearchParams(window.location.search);
             if (params.has("join")) {
-                document.getElementById("participantEmail").disabled = false;
-                document.querySelector("button[onclick='registerParticipant()']").disabled = false;
+                const id = params.get("join");
+                if (id === giveawayId) {
+                    document.getElementById("participantEmail").disabled = false;
+                    document.getElementById("joinButton").disabled = false;
+                } else {
+                    alert("Invalid or expired giveaway link.");
+                }
             }
         }
 
         checkUrlParams();
+        if (isHost) becomeHost();
         drawWheel();
     </script>
 </body>
